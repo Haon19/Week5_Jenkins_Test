@@ -27,7 +27,19 @@ pipeline {
                 }
             }
         }
-
+        stage('Test') {
+            steps{
+                bat 'mvn test'
+            }
+            post {
+                success {
+                    // Publish JUnit test results
+                    junit '**/target/surefire-reports/TEST-*.xml'
+                    // Generate JaCoCo code coverage report
+                    jacoco(execPattern: '**/target/jacoco.exec')
+                }
+            }
+        }
         stage('Package') {
             steps {
                 dir('Maven') {
