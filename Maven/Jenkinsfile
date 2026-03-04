@@ -8,17 +8,17 @@ pipeline {
         stage('Build & Test & Coverage') {
             steps {
                 dir('Maven') {
-                    // single run that compiles, tests, and generates jacoco.xml
+                    // Generates surefire XML + jacoco.xml (because 'report' is bound to verify)
                     sh 'mvn -B clean verify'
                 }
             }
             post {
                 always {
-                    // publish JUnit
+                    // Publish JUnit results for the "Test Result" link
                     junit 'Maven/target/surefire-reports/*.xml'
                 }
                 success {
-                    // publish coverage from the XML we verified exists locally
+                    // Publish code coverage for the "Coverage" link
                     publishCoverage adapters: [
                             jacocoAdapter('Maven/target/site/jacoco/jacoco.xml')
                     ], sourceCodeRetention: 'ARCHIVE', failNoReports: true
