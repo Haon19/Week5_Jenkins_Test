@@ -6,7 +6,6 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps { checkout scm }
         }
@@ -23,8 +22,7 @@ pipeline {
                 }
                 success {
                     recordCoverage(
-                            tools: [jacoco(pattern: 'Maven/target/site/jacoco/jacoco.xml')],
-                            sourceCodeRetention: 'ARCHIVE'
+                            tools: [jacoco(pattern: 'Maven/target/site/jacoco/jacoco.xml')]
                     )
                 }
             }
