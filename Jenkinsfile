@@ -10,53 +10,46 @@ pipeline {
             steps { checkout scm }
         }
 
-        stage('Build & Test & Coverage') {
+        stage('Build') {
             steps {
-                dir('Maven') {
-                    sh 'mvn -B clean verify'
-                }
-            }
-            post {
-                always {
-                    junit 'Maven/target/surefire-reports/*.xml'
-                }
-                success {
-                    recordCoverage(
-                            tools: [jacoco(pattern: 'Maven/target/site/jacoco/jacoco.xml')]
-                    )
-                }
+                bat 'mvn clean install'
             }
         }
-        stage('Test') {
-            steps{
-                bat 'mvn test'
-            }
-            post {
-                success {
-                    // Publish JUnit test results
-                    junit '**/target/surefire-reports/TEST-*.xml'
-                    // Generate JaCoCo code coverage report
-                    jacoco(execPattern: '**/target/jacoco.exec')
-                }
-            }
-        }
-        stage('Package') {
+
+        stage('Generate Report') {
             steps {
-                dir('Maven') {
-                    sh 'mvn -B -DskipTests package'
-                }
+                bat 'mvn jacoco:report'
             }
         }
+
+        stage('Publish Test Results') {
+            steps {
+                junit '**/target/surefire-reports/*.xml'
+            }
+        }
+
         stage('Publish Coverage Report') {
             steps {
                 jacoco()
             }
         }
-    }
 
-    post {
-        always {
-            archiveArtifacts artifacts: 'Maven/target/*.jar', fingerprint: true
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${DOCKERHUB_REPO}:${DOCKER_IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Push Docker Image to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKERHUB_CREDENTIALS_ID) {
+                        docker.image("${DOCKERHUB_REPO}:${DOCKER_IMAGE_TAG}").push()
+                    }
+                }
+            }
         }
     }
 }
