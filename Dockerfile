@@ -1,4 +1,17 @@
-FROM ubuntu:latest
-LABEL authors="noahstewart"
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
+WORKDIR /app
 
-ENTRYPOINT ["top", "-b"]
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package
+
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/pom.xml pom.xml
+
+ENV DISPLAY=host.docker.internal:0.0
+ENTRYPOINT ["java", "-jar","app.jar"]

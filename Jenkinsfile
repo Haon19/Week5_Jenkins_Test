@@ -35,6 +35,11 @@ pipeline {
                 }
             }
         }
+        stage('Publish Coverage Report') {
+            steps {
+                jacoco()
+            }
+        }
     }
 
     post {
