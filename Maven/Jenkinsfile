@@ -30,16 +30,20 @@ pipeline {
             }
         }
 
+
         stage('Code Coverage') {
             steps {
-                sh 'mvn -B jacoco:report'
+                sh 'mvn -B verify'
             }
             post {
                 success {
-                    jacoco execPattern: 'target/jacoco.exec'
+                    publishCoverage adapters: [
+                            jacocoAdapter('target/site/jacoco/jacoco.xml')
+                    ]
                 }
             }
         }
+
 
         stage('Package') {
             steps {
