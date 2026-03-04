@@ -1,60 +1,43 @@
 pipeline {
     agent any
-
-    tools {
-        maven 'Maven3'
-        jdk 'JDK17'
-    }
+    tools { maven 'Maven3'; jdk 'JDK17' }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
+        stage('Checkout') { steps { checkout scm } }
 
-        stage('Build') {
+        stage('Build & Test & Coverage') {
             steps {
-                sh 'mvn -B clean compile'
-            }
-        }
-
-        stage('Test') {
-            steps {
-                sh 'mvn -B test'
+                dir('Maven') {
+                    // single run that compiles, tests, and generates jacoco.xml
+                    sh 'mvn -B clean verify'
+                }
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    // publish JUnit
+                    junit 'Maven/target/surefire-reports/*.xml'
                 }
-            }
-        }
-
-
-        stage('Code Coverage') {
-            steps {
-                sh 'mvn -B verify'
-            }
-            post {
                 success {
+                    // publish coverage from the XML we verified exists locally
                     publishCoverage adapters: [
-                            jacocoAdapter('target/site/jacoco/jacoco.xml')
-                    ]
+                            jacocoAdapter('Maven/target/site/jacoco/jacoco.xml')
+                    ], sourceCodeRetention: 'ARCHIVE', failNoReports: true
                 }
             }
         }
-
 
         stage('Package') {
             steps {
-                sh 'mvn -B package'
+                dir('Maven') {
+                    sh 'mvn -B -DskipTests package'
+                }
             }
         }
     }
 
     post {
         always {
-            archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+            archiveArtifacts artifacts: 'Maven/target/*.jar', fingerprint: true
         }
     }
 }
